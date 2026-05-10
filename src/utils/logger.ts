@@ -4,9 +4,6 @@ const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 
 export const logger = pino({
   level: LOG_LEVEL,
-  transport: process.env.NODE_ENV === 'production' 
-    ? undefined 
-    : { target: 'pino-pretty', options: { colorize: true } },
   redact: {
     paths: ['ST_CLIENT_ID', 'ST_CLIENT_SECRET', 'ST_APP_KEY', 'access_token', 'Authorization'],
     censor: '[REDACTED]',
@@ -15,7 +12,7 @@ export const logger = pino({
     pid: process.pid,
     service: 'servicetitan-mcp',
   },
-});
+}, pino.destination(2));
 
 // Helper for tool-specific logging
 export function createToolLogger(toolName: string) {

@@ -23,13 +23,13 @@ jobs:
       run: npm ci
 
     - name: Lint
-      run: npm run lint || echo "Lint script not fully configured yet"
+      run: npm run lint
 
     - name: Build
       run: npm run build
 
     - name: Test
-      run: npm test || echo "Tests not yet implemented - placeholder passed"
+      run: npm test
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
