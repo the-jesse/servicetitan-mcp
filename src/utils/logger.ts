@@ -12,7 +12,7 @@ export const logger = pino({
     pid: process.pid,
     service: 'servicetitan-mcp',
   },
-});
+}, pino.destination(2));
 
 // Helper for tool-specific logging
 export function createToolLogger(toolName: string) {
