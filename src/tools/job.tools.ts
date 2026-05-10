@@ -32,7 +32,7 @@ export function registerJobTools(server: McpServer) {
         const url = client.buildUrl('dispatch', 'jobs');
 
         const data = await withRetry(
-          () => client.get(url, { params: searchParams }),
+          () => client.get<any>(url, { params: searchParams }),
           3,
           'search_jobs'
         );

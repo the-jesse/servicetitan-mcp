@@ -12,7 +12,15 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
-  "keywords": ["mcp", "model-context-protocol", "servicetitan", "openclaw", "field-service", "fsm", "ai-agent"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "servicetitan",
+    "openclaw",
+    "field-service",
+    "fsm",
+    "ai-agent"
+  ],
   "author": "Your Name / OpenClaw Community",
   "license": "MIT",
   "dependencies": {
@@ -24,11 +32,14 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
     "eslint": "^9.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.59.2"
   },
   "engines": {
     "node": ">=20.0.0"
