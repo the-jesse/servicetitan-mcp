@@ -46,8 +46,8 @@ export function registerCustomerTools(server: McpServer) {
         // Many use /crm/v2/tenant/{tenant}/customers or similar
         const url = client.buildUrl('crm', 'customers');
 
-        const data = await withRetry(
-          () => client.get<any>(url, { params: searchParams }),
+        const data: any = await withRetry(
+          () => client.get(url, { params: searchParams }),
           3,
           'search_customers'
         );
