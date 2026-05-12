@@ -19,14 +19,25 @@ All tools are namespaced `servicetitan___<verb>_<noun>` so MCP clients group the
 | `servicetitan___ping` | meta | Working — no API call |
 | `servicetitan___search_customers` | CRM | Structurally complete, endpoint unverified |
 | `servicetitan___get_customer` | CRM | Structurally complete, endpoint unverified |
+| `servicetitan___create_customer` | CRM | Structurally complete, endpoint unverified |
+| `servicetitan___update_customer` | CRM | Structurally complete, endpoint unverified |
 | `servicetitan___search_jobs` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___get_job` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___create_job` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___update_job_status` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___assign_technician` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___search_appointments` | dispatch | Structurally complete, endpoint unverified |
+| `servicetitan___get_appointment` | dispatch | Structurally complete, endpoint unverified |
+| `servicetitan___create_appointment` | dispatch | Structurally complete, endpoint unverified |
+| `servicetitan___reschedule_appointment` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___list_technicians` | settings | Structurally complete, endpoint unverified |
+| `servicetitan___get_technician` | settings | Structurally complete, endpoint unverified |
+| `servicetitan___get_availability` | dispatch | Structurally complete, endpoint unverified |
+| `servicetitan___find_available_technicians` | composite | Structurally complete, endpoint unverified |
 | `servicetitan___search_invoices` | accounting | Structurally complete, endpoint unverified |
+| `servicetitan___get_invoice` | accounting | Structurally complete, endpoint unverified |
+| `servicetitan___create_invoice_from_job` | accounting | Structurally complete, endpoint unverified |
+| `servicetitan___record_payment` | accounting | Structurally complete, endpoint unverified |
 | `servicetitan___register_webhook` | webhooks | Structurally complete, endpoint unverified |
 | `servicetitan___list_webhooks` | webhooks | Structurally complete, endpoint unverified |
 

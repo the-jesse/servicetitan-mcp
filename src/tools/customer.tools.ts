@@ -20,6 +20,32 @@ const GetCustomerSchema = z.object({
   includeRelated: z.boolean().default(true).describe('Include related data like jobs or locations'),
 });
 
+const AddressSchema = z.object({
+  street: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+}).describe('Service address');
+
+const CreateCustomerSchema = z.object({
+  name: z.string().describe('Customer name (individual or business)'),
+  type: z.enum(['Residential', 'Commercial']).optional().describe('Customer type'),
+  phone: z.string().optional().describe('Primary contact phone'),
+  email: z.string().optional().describe('Primary contact email'),
+  address: AddressSchema.optional(),
+  notes: z.string().optional().describe('Free-form notes attached to the customer record'),
+});
+
+const UpdateCustomerSchema = z.object({
+  customerId: z.string().or(z.number()).describe('The unique ID of the customer to update'),
+  name: z.string().optional(),
+  type: z.enum(['Residential', 'Commercial']).optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  address: AddressSchema.optional(),
+  notes: z.string().optional(),
+});
+
 export function registerCustomerTools(server: McpServer) {
   const client = createClient();
 
@@ -115,7 +141,68 @@ export function registerCustomerTools(server: McpServer) {
     }
   );
 
+  server.tool(
+    'servicetitan___create_customer',
+    'Create a new customer record in ServiceTitan. Use search_customers first to avoid duplicates.',
+    CreateCustomerSchema.shape,
+    async (params) => {
+      logger.info({ params }, 'Creating customer');
+      try {
+        const url = client.buildUrl('crm', 'customers');
+        const data = await withRetry(
+          () => client.post<any>(url, params),
+          3,
+          'create_customer'
+        );
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ success: true, customer: data }, null, 2),
+          }],
+        };
+      } catch (error: any) {
+        const stError = mapServiceTitanError(error, 'create_customer');
+        return {
+          content: [{
+            type: 'text',
+            text: `Error creating customer: ${stError.message}`,
+          }],
+        };
+      }
+    }
+  );
+
+  server.tool(
+    'servicetitan___update_customer',
+    'Update an existing customer record. Only provided fields are changed; omit fields you want to leave alone.',
+    UpdateCustomerSchema.shape,
+    async (params) => {
+      const { customerId, ...patch } = params;
+      logger.info({ customerId, fields: Object.keys(patch) }, 'Updating customer');
+      try {
+        const url = client.buildUrl('crm', 'customers', customerId);
+        const data = await withRetry(
+          () => client.patch<any>(url, patch),
+          3,
+          'update_customer'
+        );
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ success: true, customer: data }, null, 2),
+          }],
+        };
+      } catch (error: any) {
+        const stError = mapServiceTitanError(error, 'update_customer');
+        return {
+          content: [{
+            type: 'text',
+            text: `Error updating customer: ${stError.message}`,
+          }],
+        };
+      }
+    }
+  );
+
   logger.info('Customer tools registered');
 }
-
-// TODO: Add create_customer, update_customer tools following the same pattern
