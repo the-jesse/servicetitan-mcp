@@ -76,3 +76,12 @@
 The foundation is solid. Most of the heavy lifting (auth, error handling, patterns) is done. Adding new tools now follows a very repeatable template.
 
 **Status**: Ready for testing and rapid feature expansion.
+
+## 2026-09-11 agent pass
+
+Added Jest contracts for `mapServiceTitanError`, `withRetry`, and `normalizePaginatedResponse`. Placeholder `expect(true)` customer tests replaced with an export smoke check.
+
+Safety notes:
+- Keep `ST_ENV=sandbox` unless Jesse explicitly flips it.
+- Mutating tools (`create_job`, `update_job_status`, `assign_technician`, `register_webhook`) have no human-approval gate. Treat them as dangerous until a confirm/dry-run wrapper exists.
+- Never commit `.env` or live app keys.

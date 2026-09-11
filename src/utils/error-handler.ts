@@ -35,7 +35,7 @@ export function mapServiceTitanError(error: any, context: string = 'API call'): 
   return new ServiceTitanError(message, status, error, data);
 }
 
-// TODO: Add retry wrapper with exponential backoff for transient errors
+/** Retry 5xx/429 with exponential backoff (2^attempt seconds). Non-retryable errors map immediately. */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
