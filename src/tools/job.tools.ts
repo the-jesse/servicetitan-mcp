@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { createClient } from '../api/client.js';
 import { createToolLogger } from '../utils/logger.js';
 import { mapServiceTitanError, withRetry } from '../utils/error-handler.js';
+import {
+  WriteGateFields,
+  evaluateWriteGate,
+  gatedResponse,
+  stripGateFields,
+} from '../utils/write-gate.js';
 
 const logger = createToolLogger('job-tools');
 
@@ -30,18 +36,21 @@ const CreateJobSchema = z.object({
   scheduledStart: z.string().optional().describe('Scheduled start datetime (ISO 8601, e.g. 2026-05-10T09:00:00Z)'),
   scheduledEnd: z.string().optional().describe('Scheduled end datetime (ISO 8601)'),
   locationId: z.string().or(z.number()).optional().describe('Service location ID'),
+  ...WriteGateFields,
 });
 
 const UpdateJobStatusSchema = z.object({
   jobId: z.string().or(z.number()).describe('The unique ID of the job to update'),
   status: z.string().describe('New status to set (e.g., Scheduled, InProgress, Completed, Canceled)'),
   note: z.string().optional().describe('Optional note explaining the status change'),
+  ...WriteGateFields,
 });
 
 const AssignTechnicianSchema = z.object({
   jobId: z.string().or(z.number()).describe('The unique ID of the job'),
   technicianId: z.string().or(z.number()).describe('The unique ID of the technician to assign'),
   appointmentId: z.string().or(z.number()).optional().describe('Specific appointment ID to assign to (if applicable)'),
+  ...WriteGateFields,
 });
 
 export function registerJobTools(server: McpServer) {
@@ -118,14 +127,23 @@ export function registerJobTools(server: McpServer) {
 
   server.tool(
     'servicetitan___create_job',
-    'Create a new job in ServiceTitan for a customer. Optionally assign a technician and set a scheduled time. Use search_customers first to confirm the customer ID.',
+    'GATED WRITE. Create a new job. Defaults to dryRun=true (no network). Live write requires dryRun=false, confirm=true, and ST_ENV=sandbox or ST_ALLOW_LIVE_WRITES=1. Endpoint path still unverified.',
     CreateJobSchema.shape,
     async (params) => {
       logger.info({ params }, 'Creating job');
+      const decision = evaluateWriteGate(params);
+      const body = stripGateFields(params);
+      if (!decision.allowed) {
+        return gatedResponse('servicetitan___create_job', decision, {
+          method: 'POST',
+          pathHint: 'dispatch/jobs',
+          body,
+        });
+      }
       try {
         const url = client.buildUrl('dispatch', 'jobs');
         const data: any = await withRetry(
-          () => client.post(url, params),
+          () => client.post(url, body),
           3,
           'create_job'
         );
@@ -152,11 +170,19 @@ export function registerJobTools(server: McpServer) {
 
   server.tool(
     'servicetitan___update_job_status',
-    'Update the status of an existing job (e.g., mark as InProgress, Completed, or Canceled). Include an optional note explaining the status change.',
+    'GATED WRITE. Update job status. Defaults to dryRun=true. Live write requires dryRun=false, confirm=true, and ST_ENV=sandbox or ST_ALLOW_LIVE_WRITES=1.',
     UpdateJobStatusSchema.shape,
     async (params) => {
       const { jobId, status, note } = params;
       logger.info({ jobId, status }, 'Updating job status');
+      const decision = evaluateWriteGate(params);
+      if (!decision.allowed) {
+        return gatedResponse('servicetitan___update_job_status', decision, {
+          method: 'PATCH',
+          pathHint: `dispatch/jobs/${jobId}`,
+          body: { status, ...(note && { note }) },
+        });
+      }
       try {
         const url = client.buildUrl('dispatch', 'jobs', jobId);
         const data: any = await withRetry(
@@ -187,11 +213,21 @@ export function registerJobTools(server: McpServer) {
 
   server.tool(
     'servicetitan___assign_technician',
-    'Assign a technician to a job or specific appointment. Use list_technicians to find available technicians before assigning.',
+    'GATED WRITE. Assign a technician. Defaults to dryRun=true. Live write requires dryRun=false, confirm=true, and ST_ENV=sandbox or ST_ALLOW_LIVE_WRITES=1.',
     AssignTechnicianSchema.shape,
     async (params) => {
       const { jobId, technicianId, appointmentId } = params;
       logger.info({ jobId, technicianId, appointmentId }, 'Assigning technician');
+      const decision = evaluateWriteGate(params);
+      if (!decision.allowed) {
+        return gatedResponse('servicetitan___assign_technician', decision, {
+          method: 'PATCH',
+          pathHint: appointmentId
+            ? `dispatch/appointments/${appointmentId}`
+            : `dispatch/jobs/${jobId}`,
+          body: { technicianId },
+        });
+      }
       try {
         const baseUrl = appointmentId
           ? client.buildUrl('dispatch', 'appointments', appointmentId)

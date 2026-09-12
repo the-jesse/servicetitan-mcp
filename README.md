@@ -21,16 +21,22 @@ All tools are namespaced `servicetitan___<verb>_<noun>` so MCP clients group the
 | `servicetitan___get_customer` | CRM | Structurally complete, endpoint unverified |
 | `servicetitan___search_jobs` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___get_job` | dispatch | Structurally complete, endpoint unverified |
-| `servicetitan___create_job` | dispatch | Structurally complete, endpoint unverified |
-| `servicetitan___update_job_status` | dispatch | Structurally complete, endpoint unverified |
-| `servicetitan___assign_technician` | dispatch | Structurally complete, endpoint unverified |
+| `servicetitan___create_job` | dispatch | **Gated write** — dryRun default; endpoint unverified |
+| `servicetitan___update_job_status` | dispatch | **Gated write** — dryRun default; endpoint unverified |
+| `servicetitan___assign_technician` | dispatch | **Gated write** — dryRun default; endpoint unverified |
 | `servicetitan___search_appointments` | dispatch | Structurally complete, endpoint unverified |
 | `servicetitan___list_technicians` | settings | Structurally complete, endpoint unverified |
 | `servicetitan___search_invoices` | accounting | Structurally complete, endpoint unverified |
-| `servicetitan___register_webhook` | webhooks | Structurally complete, endpoint unverified |
+| `servicetitan___register_webhook` | webhooks | **Gated write** — dryRun default; endpoint unverified |
 | `servicetitan___list_webhooks` | webhooks | Structurally complete, endpoint unverified |
 
 "Structurally complete" means: full Zod schema, retry/backoff, error mapping, and logging — but the URL path and response field names are based on ServiceTitan's documented patterns and have not yet been exercised against a real tenant. Once verified, these will be marked Working.
+
+**Gated writes** (`create_job`, `update_job_status`, `assign_technician`, `register_webhook`):
+- `dryRun` defaults to **true** and returns the planned request with no network call.
+- A live call requires `dryRun=false` **and** `confirm=true`.
+- Even then, production (`ST_ENV` not `sandbox`) is blocked unless `ST_ALLOW_LIVE_WRITES=1`.
+- Do not treat these tools as Working. Paths are still unverified.
 
 See [`docs/TOOL_REFERENCE.md`](docs/TOOL_REFERENCE.md) for parameter detail.
 
@@ -55,6 +61,7 @@ npm run build
 | `ST_APP_KEY` | App key (sent as the `ST-App-Key` header) |
 | `ST_TENANT_ID` | Your ServiceTitan tenant ID |
 | `ST_ENV` | `sandbox` (default) or `production` |
+| `ST_ALLOW_LIVE_WRITES` | Optional. Set to `1` only to allow confirmed writes when `ST_ENV` is not sandbox |
 | `LOG_LEVEL` | Optional: `debug` / `info` / `warn` / `error` |
 
 ## Use it with an MCP client
@@ -95,7 +102,7 @@ npm test               # jest
 npm run test:watch     # jest in watch mode
 ```
 
-Run a single test: `npx jest tests/tools/customer.test.ts` or `npx jest -t "name"`.
+Run a single test: `npx jest tests/utils/write-gate.test.ts` or `npx jest -t "name"`.
 
 See [`CLAUDE.md`](CLAUDE.md) for architecture details and the standard tool-implementation template, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add new tools.
 
