@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { createClient } from '../api/client.js';
 import { createToolLogger } from '../utils/logger.js';
 import { mapServiceTitanError, withRetry } from '../utils/error-handler.js';
+import {
+  WriteGateFields,
+  evaluateWriteGate,
+  gatedResponse,
+  stripGateFields,
+} from '../utils/write-gate.js';
 
 const logger = createToolLogger('webhook-tools');
 
@@ -10,6 +16,7 @@ const RegisterWebhookSchema = z.object({
   url: z.string().url().describe('The HTTPS URL that will receive webhook events'),
   events: z.array(z.string()).describe('List of events to subscribe to, e.g. ["job.created", "job.updated", "appointment.completed"]'),
   active: z.boolean().default(true).describe('Whether the webhook is active'),
+  ...WriteGateFields,
 });
 
 export function registerWebhookTools(server: McpServer) {
@@ -17,15 +24,23 @@ export function registerWebhookTools(server: McpServer) {
 
   server.tool(
     'servicetitan___register_webhook',
-    'Register a new webhook endpoint with ServiceTitan. Supports events like job.created, job.updated, appointment.completed. Note: Some webhook features may require coordination with ServiceTitan support.',
+    'GATED WRITE. Register a webhook. Defaults to dryRun=true. Live write requires dryRun=false, confirm=true, and ST_ENV=sandbox or ST_ALLOW_LIVE_WRITES=1. Endpoint unverified; may need ServiceTitan support.',
     RegisterWebhookSchema.shape,
     async (params) => {
       logger.info({ params }, 'Registering webhook');
+      const decision = evaluateWriteGate(params);
+      const body = stripGateFields(params);
+      if (!decision.allowed) {
+        return gatedResponse('servicetitan___register_webhook', decision, {
+          method: 'POST',
+          pathHint: '/webhooks/v2/register',
+          body,
+        });
+      }
       try {
-        // Webhook registration endpoint
         const url = '/webhooks/v2/register';
         const data = await withRetry(
-          () => client.post(url, params),
+          () => client.post(url, body),
           3,
           'register_webhook'
         );
